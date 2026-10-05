@@ -1,0 +1,625 @@
+
+ 1a – CRUD Operations using Express with MongoDB
+
+models/Student.js
+
+const mongoose = require("mongoose");
+const studentSchema = new mongoose.Schema({
+  name: String,
+  age: Number,
+  course: String
+});
+module.exports = mongoose.model("Student", studentSchema);
+
+index.js
+
+const express = require("express");
+const mongoose = require("mongoose");
+const Student = require("./models/Student");
+const app = express();
+app.use(express.json());
+mongoose.connect("mongodb://127.0.0.1:27017/studentDB")
+  .then(() => console.log("MongoDB connected"))
+  .catch(err => console.log(err));
+// CREATE
+app.post("/students", async (req, res) => {
+  const student = await Student.create(req.body);
+  res.status(201).json(student);
+});
+// READ ALL
+app.get("/students", async (req, res) => {
+  res.json(await Student.find());
+});
+// READ ONE
+app.get("/students/:id", async (req, res) => {
+  res.json(await Student.findById(req.params.id));
+});
+// UPDATE
+app.put("/students/:id", async (req, res) => {
+  const student = await Student.findByIdAndUpdate(
+    req.params.id,
+    req.body,
+    { new: true }
+  );
+  res.json(student);
+});
+// DELETE
+app.delete("/students/:id", async (req, res) => {
+  await Student.findByIdAndDelete(req.params.id);
+  res.json({ message: "Deleted successfully" });
+});
+app.listen(3000, () => {
+  console.log("Server running on port 3000");
+});
+
+Run
+
+npm init -y
+npm i express mongoose
+node index.js
+
+⸻
+
+ 1b – File/Image/Document Upload using MongoDB
+
+models/File.js
+
+const mongoose = require("mongoose");
+const fileSchema = new mongoose.Schema({
+  filename: String,
+  path: String,
+  uploadDate: {
+    type: Date,
+    default: Date.now
+  }
+});
+module.exports = mongoose.model("File", fileSchema);
+
+index.js
+
+const express = require("express");
+const mongoose = require("mongoose");
+const multer = require("multer");
+const File = require("./models/File");
+const app = express();
+mongoose.connect("mongodb://127.0.0.1:27017/studentDB")
+  .then(() => console.log("MongoDB connected"))
+  .catch(err => console.log(err));
+const storage = multer.diskStorage({
+  destination: "uploads/",
+  filename: (req, file, cb) => {
+    cb(null, Date.now() + "-" + file.originalname);
+  }
+});
+const upload = multer({ storage });
+// Upload file
+app.post("/upload", upload.single("file"), async (req, res) => {
+  const newFile = await File.create({
+    filename: req.file.filename,
+    path: req.file.path
+  });
+  res.status(201).json(newFile);
+});
+// Get files
+app.get("/files", async (req, res) => {
+  res.json(await File.find());
+});
+app.listen(3000, () => {
+  console.log("Server running on port 3000");
+});
+
+Run
+
+npm init -y
+npm i express mongoose multer
+node index.js
+
+Create:
+
+uploads/
+
+For Postman, use POST → Body → form-data → key: file → File.
+
+⸻
+
+ 2 – Chat Application using Socket.IO
+
+index.js
+
+const express = require("express");
+const http = require("http");
+const socketIO = require("socket.io");
+const app = express();
+const server = http.createServer(app);
+const io = socketIO(server);
+app.get("/", (req, res) => {
+  res.sendFile(__dirname + "/index.html");
+});
+io.on("connection", (socket) => {
+  socket.on("chat message", (msg) => {
+    io.emit("chat message", msg);
+  });
+});
+server.listen(3000, () => {
+  console.log("Running on port 3000");
+});
+
+index.html
+
+<!DOCTYPE html>
+<html>
+<body>
+<input id="input">
+<button onclick="send()">Send</button>
+<ul id="messages"></ul>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const socket = io();
+function send() {
+  const msg = document.getElementById("input").value;
+  socket.emit("chat message", msg);
+}
+socket.on("chat message", (msg) => {
+  document.getElementById("messages").innerHTML +=
+    `<li>${msg}</li>`;
+});
+</script>
+</body>
+</html>
+
+Run
+
+npm init -y
+npm i express socket.io
+node index.js
+
+Open:
+
+http://localhost:3000
+
+⸻
+
+ 3 – Reading and Writing a File in Node.js
+
+index.js
+
+const fs = require("fs");
+fs.writeFile("output.txt", "Hello Students!", (err) => {
+  if (err) {
+    console.log("Write error");
+    return;
+  }
+  console.log("File written");
+  fs.readFile("input.txt", "utf8", (err, data) => {
+    if (err) {
+      console.log("Read error");
+      return;
+    }
+    console.log("Contents:", data);
+  });
+});
+
+Create an input.txt file:
+
+Hello, this is my input file.
+
+Run
+
+npm init -y
+node index.js
+
+⸻
+
+ 4 – Creating and Publishing Your Own Node Module
+
+index.js
+
+function add(a, b) {
+  return a + b;
+}
+function greet(name) {
+  return `Hello, ${name}!`;
+}
+module.exports = {
+  add,
+  greet
+};
+
+package.json
+
+{
+  "name": "my-first-module",
+  "version": "1.0.0",
+  "main": "index.js"
+}
+
+Use the module
+
+const myModule = require("my-first-module");
+console.log(myModule.add(2, 3));
+console.log(myModule.greet("Mansi"));
+
+Commands
+
+npm init -y
+npm login
+npm publish
+
+To install:
+
+npm i my-first-module
+
+⸻
+
+ 5 – Express Server and HTTP Methods
+
+index.js
+
+const express = require("express");
+const app = express();
+app.use(express.json());
+let items = [
+  { id: 1, name: "Item One" }
+];
+// GET
+app.get("/items", (req, res) => {
+  res.json(items);
+});
+// POST
+app.post("/items", (req, res) => {
+  const newItem = {
+    id: items.length + 1,
+    name: req.body.name
+  };
+  items.push(newItem);
+  res.status(201).json(newItem);
+});
+// PUT
+app.put("/items/:id", (req, res) => {
+  const item = items.find(i => i.id == req.params.id);
+  item.name = req.body.name;
+  res.json(item);
+});
+// DELETE
+app.delete("/items/:id", (req, res) => {
+  items = items.filter(i => i.id != req.params.id);
+  res.json({
+    message: "Deleted"
+  });
+});
+app.listen(3000, () => {
+  console.log("Running on port 3000");
+});
+
+Run
+
+npm init -y
+npm i express
+node index.js
+
+⸻
+
+ 6 – Connect Node.js with MongoDB
+
+index.js
+
+const express = require("express");
+const mongoose = require("mongoose");
+const app = express();
+app.use(express.json());
+mongoose.connect("mongodb://127.0.0.1:27017/studentDB")
+  .then(() => console.log("MongoDB connected"))
+  .catch(err => console.log(err));
+app.use("/users", require("./routes/userRoutes"));
+app.listen(3000, () => {
+  console.log("Server running on port 3000");
+});
+
+routes/userRoutes.js
+
+const express = require("express");
+const router = express.Router();
+const mongoose = require("mongoose");
+const User = mongoose.model(
+  "User",
+  new mongoose.Schema({
+    name: String,
+    email: String
+  })
+);
+// GET
+router.get("/", async (req, res) => {
+  res.json(await User.find());
+});
+// POST
+router.post("/", async (req, res) => {
+  res.json(await User.create(req.body));
+});
+module.exports = router;
+
+Install
+
+npm init -y
+npm i express mongoose
+node index.js
+
+⸻
+
+ 7a – TODO List using React Hooks
+
+Install
+
+npx create-react-app my-app
+cd my-app
+npm i styled-components
+npm start
+
+src/App.js
+
+import { useState } from "react";
+import styled from "styled-components";
+const Button = styled.button`
+  background: green;
+  color: white;
+  padding: 8px;
+`;
+function App() {
+  const [input, setInput] = useState("");
+  const [tasks, setTasks] = useState([]);
+  const addTask = () => {
+    if (!input.trim()) return;
+    setTasks([
+      ...tasks,
+      {
+        text: input,
+        completed: false
+      }
+    ]);
+    setInput("");
+  };
+  const toggleTask = (i) => {
+    const updated = [...tasks];
+    updated[i].completed = !updated[i].completed;
+    setTasks(updated);
+  };
+  return (
+    <div>
+      <h2>Todo List</h2>
+      <input
+        value={input}
+        onChange={e => setInput(e.target.value)}
+      />
+      <Button onClick={addTask}>Add</Button>
+      {tasks.map((t, i) => (
+        <div key={i}>
+          <span
+            style={{
+              textDecoration:
+                t.completed ? "line-through" : "none"
+            }}
+          >
+            {t.text}
+          </span>
+          <input
+            type="checkbox"
+            checked={t.completed}
+            onChange={() => toggleTask(i)}
+          />
+        </div>
+      ))}
+      <Button onClick={() => setTasks([])}>
+        Clear All
+      </Button>
+    </div>
+  );
+}
+export default App;
+
+⸻
+
+ 7b – Create and Validate User Form in React
+
+src/App.js
+
+import { useState } from "react";
+function App() {
+  const [form, setForm] = useState({
+    name: "",
+    email: ""
+  });
+  const [errors, setErrors] = useState({});
+  const handleChange = (e) => {
+    setForm({
+      ...form,
+      [e.target.name]: e.target.value
+    });
+  };
+  const validate = () => {
+    let err = {};
+    if (!form.name.trim()) {
+      err.name = "Name is required";
+    }
+    if (!/\S+@\S+\.\S+/.test(form.email)) {
+      err.email = "Invalid email";
+    }
+    setErrors(err);
+    return Object.keys(err).length === 0;
+  };
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (validate()) {
+      alert("Form submitted successfully!");
+    }
+  };
+  return (
+    <form onSubmit={handleSubmit}>
+      <input
+        name="name"
+        placeholder="Name"
+        onChange={handleChange}
+      />
+      {errors.name && (
+        <p style={{ color: "red" }}>
+          {errors.name}
+        </p>
+      )}
+      <input
+        name="email"
+        placeholder="Email"
+        onChange={handleChange}
+      />
+      {errors.email && (
+        <p style={{ color: "red" }}>
+          {errors.email}
+        </p>
+      )}
+      <button type="submit">
+        Submit
+      </button>
+    </form>
+  );
+}
+export default App;
+
+⸻
+
+ 8 – Fetch API Data and Render List in React
+
+src/App.js
+
+import { useEffect, useState } from "react";
+function App() {
+  const [users, setUsers] = useState([]);
+  useEffect(() => {
+    fetch("https://jsonplaceholder.typicode.com/users")
+      .then(res => res.json())
+      .then(data => setUsers(data));
+  }, []);
+  return (
+    <div>
+      <h1>User List</h1>
+      <ul>
+        {users.map(u => (
+          <li key={u.id}>
+            {u.name} - {u.email}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+export default App;
+
+Run
+
+npx create-react-app my-app
+cd my-app
+npm start
+
+⸻
+
+ 9 – Submit User Data using API in React
+
+src/App.js
+
+import { useState } from "react";
+function App() {
+  const [user, setUser] = useState({
+    name: "",
+    email: ""
+  });
+  const [message, setMessage] = useState("");
+  const handleChange = (e) => {
+    setUser({
+      ...user,
+      [e.target.name]: e.target.value
+    });
+  };
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const res = await fetch(
+      "https://jsonplaceholder.typicode.com/users",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(user)
+      }
+    );
+    setMessage(
+      res.ok
+        ? "Submitted successfully!"
+        : "Failed to submit"
+    );
+  };
+  return (
+    <form onSubmit={handleSubmit}>
+      <input
+        name="name"
+        onChange={handleChange}
+        placeholder="Name"
+        required
+      />
+      <input
+        name="email"
+        onChange={handleChange}
+        placeholder="Email"
+        required
+      />
+      <button type="submit">
+        Submit
+      </button>
+      <h3>{message}</h3>
+    </form>
+  );
+}
+export default App;
+
+⸻
+
+ 10 – Implement Routing using React Router
+
+Install
+
+npx create-react-app my-app
+cd my-app
+npm i react-router-dom
+npm start
+
+src/App.js
+
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Link
+} from "react-router-dom";
+function Home() {
+  return <h2>Home Page</h2>;
+}
+function About() {
+  return <h2>About Page</h2>;
+}
+function App() {
+  return (
+    <BrowserRouter>
+      <nav>
+        <Link to="/">Home</Link> |{" "}
+        <Link to="/about">About</Link>
+      </nav>
+      <Routes>
+        <Route
+          path="/"
+          element={<Home />}
+        />
+        <Route
+          path="/about"
+          element={<About />}
+        />
+      </Routes>
+    </BrowserRouter>
+  );
+}
+export default App;
+
